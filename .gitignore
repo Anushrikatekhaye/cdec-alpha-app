@@ -52,14 +52,16 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Real config — copy from committed .example / .sample files
-#**/terraform.tfvars
+# Sensitive / local-only Terraform config
 **/*.auto.tfvars
 **/*.auto.tfvars.json
 **/backend.hcl
-*.tfvars
 
-# Committed samples (frontend/backend stacks)
+# Other tfvars files; stack terraform.tfvars is committed intentionally
+*.tfvars
+!**/terraform.tfvars
+
+# Committed samples
 !*.tfvars.example
 !*.tfvars.sample
 !**/terraform.tfvars.example
