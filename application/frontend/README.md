@@ -1,77 +1,94 @@
-# CDEC Frontend
+# Frontend
 
-React + TypeScript + Vite single-page application for the CDEC course enrollment UI. Static assets are built locally and deployed to **S3**, served through **CloudFront** (see [`infrastructure/frontend/`](../../infrastructure/frontend/README.md)).
+React single-page application for the CDEC Alpha platform.
+
+## Stack
+
+| Tool | Version |
+|------|---------|
+| Node.js | 20.x (LTS) |
+| npm | 10.x (bundled with Node 20) |
+| React | 19 |
+| TypeScript | 5.8 |
+| Vite | 7 |
+| Tailwind CSS | 4 |
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Node.js | 20.x | Matches the Docker build image |
-| npm | 10.x+ | Bundled with Node |
-| AWS CLI | v2 | Required only for S3 deploy |
-| Terraform | 1.x | Required only to read bucket/distribution outputs |
-
-Configure AWS credentials before deploying (profile or environment variables):
+Install Node.js 20 on your Linux machine:
 
 ```bash
-export AWS_DEFAULT_REGION=eu-west-1
-export AWS_ACCESS_KEY_ID=your-access-key
-export AWS_SECRET_ACCESS_KEY=your-secret-key
+node --version   # should print v20.x.x
+npm --version
 ```
 
-## Environment variables
+For S3 deployment, install and configure the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
 
-Vite reads API URLs at **build time**. Copy the example file and adjust values for your environment:
+```bash
+aws --version
+aws configure    # set access key, secret, and default region (e.g. eu-west-1)
+```
+
+## Setup
+
+From the project root:
 
 ```bash
 cd application/frontend
+npm ci
+```
+
+Copy the example environment file and edit the API URLs if needed:
+
+```bash
 cp env.example .env
 ```
 
+Environment variables (all prefixed with `VITE_` so Vite exposes them to the browser):
+
 | Variable | Description |
 |----------|-------------|
-| `VITE_AUTH_API` | Authentication API base URL |
-| `VITE_COURSE_API` | Courses API base URL |
-| `VITE_ENROLL_API` | Enrollments API base URL |
-
-Example values (from `env.example`):
-
-```bash
-VITE_AUTH_API=https://api.thecloudnine.in/api/auth
-VITE_COURSE_API=https://api.thecloudnine.in/api/courses
-VITE_ENROLL_API=https://api.thecloudnine.in/api/enroll
-```
+| `VITE_AUTH_API` | Auth service base URL |
+| `VITE_COURSE_API` | Course service base URL |
+| `VITE_ENROLL_API` | Enrollment service base URL |
 
 ## Run locally (development)
 
-From the repository root:
+Start the dev server with hot reload:
 
 ```bash
-cd application/frontend
-npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite (typically `http://localhost:5173`). The dev server supports hot module replacement.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-Other useful commands:
+The dev server reads variables from `.env` (or `.env.local`).
+
+## Build
+
+### Development build
+
+Use the dev server — no separate build step is required for day-to-day development:
 
 ```bash
-npm run lint      # ESLint
-npm run preview   # Serve the production build locally
+npm run dev
 ```
 
-## Build for production
+### Production build
+
+Set the API URLs for production, then build. Output is written to `dist/`.
 
 ```bash
-cd application/frontend
-npm ci
+export VITE_AUTH_API=https://api.thecloudnine.in/api/auth
+export VITE_COURSE_API=https://api.thecloudnine.in/api/courses
+export VITE_ENROLL_API=https://api.thecloudnine.in/api/enroll
+
 npm run build
 ```
 
-This runs TypeScript compilation and Vite bundling. Output is written to `dist/`.
+Or put those values in `.env` before running `npm run build`.
 
-To verify the build locally before uploading:
+Preview the production build locally:
 
 ```bash
 npm run preview
@@ -79,85 +96,53 @@ npm run preview
 
 ## Deploy to S3
 
-Infrastructure (S3 bucket + CloudFront + DNS) is managed by Terraform in `infrastructure/frontend/`. Apply that stack first if it is not already provisioned:
+After a production build, upload the contents of `dist/` to your S3 bucket.
+
+Replace `YOUR-BUCKET-NAME` with your actual bucket name:
 
 ```bash
-cd infrastructure/frontend
-cp backend.hcl.example backend.hcl    # if not already configured
-cp terraform.tfvars.example terraform.tfvars
-terraform init -backend-config=backend.hcl
-terraform apply -var-file=terraform.tfvars
+aws s3 sync dist/ s3://YOUR-BUCKET-NAME/ --delete
 ```
 
-Then build and upload from a Linux shell:
+If the site is served through CloudFront, invalidate the cache so users get the new files:
 
 ```bash
-# 1. Build the SPA (uses .env for API URLs)
-cd application/frontend
-npm ci
-npm run build
-
-# 2. Resolve bucket and CloudFront distribution from Terraform
-BUCKET=$(terraform -chdir=../../infrastructure/frontend output -raw s3_bucket_name)
-DIST_ID=$(terraform -chdir=../../infrastructure/frontend output -raw cloudfront_distribution_id)
-
-# 3. Sync static assets to S3 (--delete removes stale files)
-aws s3 sync dist/ "s3://${BUCKET}/" --delete
-
-# 4. Invalidate CloudFront cache so users get the new build
 aws cloudfront create-invalidation \
-  --distribution-id "$DIST_ID" \
+  --distribution-id YOUR-DISTRIBUTION-ID \
   --paths "/*"
 ```
 
-One-liner (after `npm run build`):
-
-```bash
-BUCKET=$(terraform -chdir=../../infrastructure/frontend output -raw s3_bucket_name) && \
-DIST_ID=$(terraform -chdir=../../infrastructure/frontend output -raw cloudfront_distribution_id) && \
-aws s3 sync dist/ "s3://${BUCKET}/" --delete && \
-aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
-```
-
-After deploy, the site is available at the CloudFront domain or your configured DNS name:
-
-```bash
-terraform -chdir=../../infrastructure/frontend output cloudfront_domain_name
-terraform -chdir=../../infrastructure/frontend output dns_record_fqdns
-```
-
-## Run with Docker (optional)
-
-Build and run the production nginx image locally:
+Full deploy example:
 
 ```bash
 cd application/frontend
 
-docker build \
-  --build-arg VITE_AUTH_API=https://api.thecloudnine.in/api/auth \
-  --build-arg VITE_COURSE_API=https://api.thecloudnine.in/api/courses \
-  --build-arg VITE_ENROLL_API=https://api.thecloudnine.in/api/enroll \
-  -t cdec-frontend .
+export VITE_AUTH_API=https://api.thecloudnine.in/api/auth
+export VITE_COURSE_API=https://api.thecloudnine.in/api/courses
+export VITE_ENROLL_API=https://api.thecloudnine.in/api/enroll
 
-docker run --rm -p 5173:5173 cdec-frontend
+npm ci
+npm run build
+
+aws s3 sync dist/ s3://YOUR-BUCKET-NAME/ --delete
+aws cloudfront create-invalidation --distribution-id YOUR-DISTRIBUTION-ID --paths "/*"
 ```
 
-Open `http://localhost:5173`.
+## Other commands
 
-## Project layout
+```bash
+npm run lint     # run ESLint
+npm run preview  # serve the production build locally
+```
+
+## Project structure
 
 ```text
 application/frontend/
-├── src/              # React components, contexts, API client
-├── public/           # Static assets copied as-is to dist/
-├── dist/             # Production build output (gitignored)
-├── env.example       # Template for .env
-├── vite.config.ts
-├── Dockerfile        # nginx-based production image
-└── package.json
+├── src/              # React components and app code
+├── public/           # Static assets copied as-is
+├── dist/             # Production build output (created by npm run build)
+├── env.example       # Example environment variables
+├── package.json
+└── vite.config.ts
 ```
-
-## Related documentation
-
-- Frontend infrastructure (Terraform, Jenkins): [`infrastructure/frontend/README.md`](../../infrastructure/frontend/README.md)
-- Remote Terraform state: [`infrastructure/REMOTE_STATE.md`](../../infrastructure/REMOTE_STATE.md)
