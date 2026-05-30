@@ -54,11 +54,6 @@ variable "acm_certificate_arn" {
   description = "ACM certificate ARN in us-east-1 for custom domain names. Required when aliases is non-empty."
   type        = string
   default     = null
-
-  validation {
-    condition     = length(var.aliases) == 0 || var.acm_certificate_arn != null
-    error_message = "acm_certificate_arn must be set when aliases are provided."
-  }
 }
 
 variable "default_root_object" {

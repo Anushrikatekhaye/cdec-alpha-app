@@ -1,5 +1,12 @@
 # S3 + CloudFront static frontend (Vite/React SPA)
 
+check "acm_certificate_with_aliases" {
+  assert {
+    condition     = length(var.aliases) == 0 || var.acm_certificate_arn != null
+    error_message = "acm_certificate_arn must be set when aliases are provided."
+  }
+}
+
 locals {
   name_prefix             = var.name_prefix != null ? var.name_prefix : "${var.application}-${var.environment}"
   bucket_name             = coalesce(var.bucket_name, "${local.name_prefix}-frontend")

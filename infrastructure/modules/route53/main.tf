@@ -1,5 +1,22 @@
 # Route 53 — hosted zone + DNS records (CloudFront aliases, etc.)
 
+check "zone_name_required_without_zone_id" {
+  assert {
+    condition     = var.zone_id != null || (var.zone_name != null && var.zone_name != "")
+    error_message = "zone_name is required when zone_id is not set (module creates a new hosted zone)."
+  }
+}
+
+check "zone_name_not_reserved" {
+  assert {
+    condition = var.zone_id != null || !contains(
+      ["example.com", "example.net", "example.org"],
+      lower(trimsuffix(var.zone_name, "."))
+    )
+    error_message = "zone_name cannot be example.com, example.net, or example.org — AWS reserves these for documentation and rejects hosted zone creation."
+  }
+}
+
 locals {
   name_prefix = var.name_prefix != null ? var.name_prefix : "${var.application}-${var.environment}"
   zone_name   = trimsuffix(var.zone_name, ".")
