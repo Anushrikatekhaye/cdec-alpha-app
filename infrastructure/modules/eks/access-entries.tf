@@ -3,9 +3,16 @@
 data "aws_caller_identity" "current" {}
 
 locals {
+  # EC2/Jenkins hosts use assumed-role sessions at runtime; EKS access entries require iam::role ARNs.
+  cluster_admin_role_arns = [
+    for name in var.cluster_admin_iam_role_names :
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${name}"
+  ]
+
   # Static map keys are required: for_each cannot use a set when values include apply-time ARNs.
   cluster_admin_entries = merge(
     { for idx, arn in var.cluster_admin_principal_arns : "principal-${idx}" => arn },
+    { for idx, arn in local.cluster_admin_role_arns : "role-${idx}" => arn },
     var.include_caller_as_cluster_admin ? { "terraform-caller" = data.aws_caller_identity.current.arn } : {},
   )
 

@@ -120,7 +120,13 @@ variable "enable_cluster_autoscaler_tags" {
 }
 
 variable "cluster_admin_principal_arns" {
-  description = "IAM ARNs allowed to run kubectl against the cluster (Jenkins user, EC2 instance role, etc.)."
+  description = "IAM user or role ARNs for kubectl. Must be arn:aws:iam::... — not assumed-role session ARNs from EC2."
+  type        = list(string)
+  default     = []
+}
+
+variable "cluster_admin_iam_role_names" {
+  description = "IAM role names for EC2 instance profiles (e.g. Jenkins kubectl agent). Safer than copying sts get-caller-identity output from EC2."
   type        = list(string)
   default     = []
 }

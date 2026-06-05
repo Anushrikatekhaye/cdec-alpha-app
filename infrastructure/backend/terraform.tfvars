@@ -24,7 +24,8 @@ cluster_endpoint_public_access       = true
 cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
-# kubectl: run `aws sts get-caller-identity --query Arn` on the Jenkins/EC2 host and add below
+# EC2 Jenkins/kubectl agent — from sts get-caller-identity assumed-role/admin-ec2/...
+cluster_admin_iam_role_names = ["admin-ec2"]
 cluster_admin_principal_arns = []
 include_caller_as_cluster_admin = true
 

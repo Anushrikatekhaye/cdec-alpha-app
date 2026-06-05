@@ -164,7 +164,13 @@ variable "bootstrap_cluster_creator_admin_permissions" {
 }
 
 variable "cluster_admin_principal_arns" {
-  description = "IAM user or role ARNs granted AmazonEKSClusterAdminPolicy (kubectl / CI deploy principals)."
+  description = "IAM user or role ARNs granted AmazonEKSClusterAdminPolicy. Use arn:aws:iam::...:role/NAME — not assumed-role session ARNs from sts get-caller-identity on EC2."
+  type        = list(string)
+  default     = []
+}
+
+variable "cluster_admin_iam_role_names" {
+  description = "IAM role names (without path) for EC2 instance profiles / Jenkins agents. ARNs are built as arn:aws:iam::ACCOUNT:role/NAME."
   type        = list(string)
   default     = []
 }
