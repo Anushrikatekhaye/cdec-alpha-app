@@ -11,8 +11,10 @@ resource "aws_security_group" "node" {
   tags = merge(
     local.base_tags,
     {
-      Name                                        = "${var.cluster_name}-node-sg"
-      "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+      Name = "${var.cluster_name}-node-sg"
+      # Do not tag with kubernetes.io/cluster/<name> — EKS already tags the cluster
+      # primary SG. Two cluster-tagged SGs on the same node ENI breaks the AWS Load
+      # Balancer Controller (target-type: ip) target group reconciliation.
     }
   )
 

@@ -4,8 +4,7 @@ resource "aws_security_group" "alb" {
   vpc_id      = var.vpc_id
 
   tags = merge(local.base_tags, {
-    Name                                        = "${var.cluster_name}-alb-sg"
-    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+    Name = "${var.cluster_name}-alb-sg"
   })
 
   lifecycle {
