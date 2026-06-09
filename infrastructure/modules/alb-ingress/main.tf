@@ -1,4 +1,9 @@
 locals {
+  # EKS ships with default, kube-system, kube-public, and kube-node-lease.
+  cluster_namespaces = toset(["default", "kube-system", "kube-public", "kube-node-lease"])
+
+  create_ingress_namespace = var.create_ingress && !contains(local.cluster_namespaces, var.ingress_namespace)
+
   name_prefix = "${var.project_name}-${var.environment}"
 
   base_tags = merge(
