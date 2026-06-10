@@ -2,11 +2,17 @@
 
 data "aws_caller_identity" "current" {}
 
+# Resolve role names to canonical ARNs (includes path). Fails at plan if the role does not exist.
+data "aws_iam_role" "cluster_admin" {
+  for_each = toset(var.cluster_admin_iam_role_names)
+  name     = each.key
+}
+
 locals {
   # EC2/Jenkins hosts use assumed-role sessions at runtime; EKS access entries require iam::role ARNs.
   cluster_admin_role_arns = [
     for name in var.cluster_admin_iam_role_names :
-    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${name}"
+    data.aws_iam_role.cluster_admin[name].arn
   ]
 
   # Static map keys are required: for_each cannot use a set when values include apply-time ARNs.
