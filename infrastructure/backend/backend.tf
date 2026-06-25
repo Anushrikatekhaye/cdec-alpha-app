@@ -8,7 +8,7 @@ terraform {
   backend "s3" {
     bucket = "cdec-alpha-terraform-state-anushrik"
     key    = "backend/terraform.tfstate"
-    region = "us-east-2"
+    region = "eu-west-1"
     #profile = "terraform-sessions"
 
   }
