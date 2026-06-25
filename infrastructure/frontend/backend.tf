@@ -6,9 +6,9 @@
 
 terraform {
   backend "s3" {
-    bucket  = "cdec-alpha-terraform-state-atulyw"
+    bucket  = "cdec-alpha-terraform-state-anushrik"
     key     = "frontend/terraform.tfstate"
-    region  = "eu-west-1"
+    region  = "us-east-2"
     encrypt = true
     # profile = "terraform-sessions"
 
