@@ -31,7 +31,7 @@ env:
   IMAGE: 439055361064.dkr.ecr.ap-south-1.amazonaws.com/backend/enrollment-service:latest
   ECR_REGION: ap-south-1
   EKS_CLUSTER: cdec-eks-dev
-  EKS_REGION: eu-west-1
+  EKS_REGION: us-east-2
 
 jobs:
   build:
